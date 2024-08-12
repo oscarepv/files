@@ -1,0 +1,82 @@
+
+services:
+  
+  eurekaserver-service:
+    build:
+       context: /Users/oscar/Documents/sistemas/SPTRING/paymentchainparent/infraestructuradomain/eurekaserver
+       dockerfile: Dockerfile
+       args:
+           JAR_FILE: target/eurekaserver-0.0.1-SNAPSHOT.jar  
+    container_name: id-eureka
+    image: ceurekaserver_image:latest
+    ports:
+      - 8761:8761
+    environment:
+      - JAVA_OPTS=
+         -Xms256M 
+         -Xmx256M 
+    platform: linux/amd64
+    
+  product-service:
+    build:
+       context: /Users/oscar/Documents/sistemas/SPTRING/paymentchainparent/businessdomain/product
+       dockerfile: Dockerfile
+       args:
+           JAR_FILE: target/product-0.0.1-SNAPSHOT.jar  
+    container_name: id-product
+    image: product_image:latest
+    ports:
+      - 8083:8083
+    environment:
+      - JAVA_OPTS=
+         -Xms256M 
+         -Xmx256M 
+         -DEUREKA_SERVER=http://eurekaserver-service:8761/eureka/
+    depends_on:
+      - eurekaserver-service
+    platform: linux/amd64
+    
+  customer_service:
+    build:
+      context: /Users/oscar/Documents/sistemas/SPTRING/paymentchainparent/businessdomain/customer
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/customer-0.0.1-SNAPSHOT.jar
+    image: customer_image:latest
+    container_name: customer_container
+    ports:
+      - 8081:8080
+    environment:
+      - JAVA_OPTS=
+         -Xms256M 
+         -Xmx256M 
+         -DEUREKA_SERVER=http://eurekaserver-service:8761/eureka/
+    depends_on:
+      - eurekaserver-service
+    platform: linux/amd64
+    
+    
+  postgres_db:
+    container_name: postgres
+    image: postgres:latest
+    ports:
+        - 5432:5432
+    volumes:
+        - ./dbfiles:/docker-entrypoint-initdb.d
+        - ./postgres_data:/var/lib/postgresql/data
+    environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: qwerty
+        POSTGRES_DB: postgres
+
+
+  pgadmin4:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "qwerty"
+    ports:
+      - 80:80
+    depends_on:
+      - postgres_db
